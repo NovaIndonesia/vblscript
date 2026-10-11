@@ -1,12 +1,11 @@
 --[[
     ╔═══════════════════════════════════════════╗
     ║    VOLLEYBALL LEGENDS - PRO SCRIPT       ║
-    ║  Premium GUI with Minimize & Custom Logo  ║
+    ║      FIXED: Responsive + Draggable       ║
     ║         Made for Maximum Performance       ║
     ╚═══════════════════════════════════════════╝
 
-    Author: Pro Dev | Version: 2.0
-    Safe for all executors - Delta, Synapse, etc
+    Author: Pro Dev | Version: 2.1 FIXED
 ]]
 
 local Players = game:GetService("Players")
@@ -14,8 +13,10 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local LocalPlayer = Players.LocalPlayer
+local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
 
--- ==================== COLOR THEME (Volleyball Orange/Blue) ====================
+-- ==================== COLOR THEME ====================
 local theme = {
     bg_dark = Color3.fromRGB(12, 14, 20),
     bg_main = Color3.fromRGB(18, 22, 30),
@@ -34,7 +35,12 @@ local theme = {
     accent_purple = Color3.fromRGB(160, 100, 255),
 }
 
--- ==================== UTILITY FUNCTIONS ====================
+-- ==================== RESPONSIVE SIZE ====================
+-- Otomatis menyesuaikan ukuran layar
+local viewport = workspace.CurrentCamera.ViewportSize
+local WINDOW_WIDTH = math.clamp(viewport.X * 0.6, 520, 700)
+local WINDOW_HEIGHT = math.clamp(viewport.Y * 0.65, 380, 480)
+
 local function create(className, properties)
     local obj = Instance.new(className)
     for prop, value in pairs(properties or {}) do
@@ -73,7 +79,7 @@ end
 local function notify(title, message, accentColor, duration)
     local screenGui = create("ScreenGui", {
         Name = "VBLNotification",
-        Parent = game:GetService("CoreGui"),
+        Parent = CoreGui,
         ResetOnSpawn = false,
         IgnoreGuiInset = true,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
@@ -83,38 +89,39 @@ local function notify(title, message, accentColor, duration)
         Parent = screenGui,
         BackgroundColor3 = theme.panel_light,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -320, 0, 20),
-        Size = UDim2.new(0, 280, 0, 80),
-        ClipsDescendants = true
+        Position = UDim2.new(1, 300, 0, 20),
+        Size = UDim2.new(0, 260, 0, 76),
+        ClipsDescendants = true,
+        ZIndex = 10
     })
-    addCorner(notificationFrame, 14)
+    addCorner(notificationFrame, 12)
     addStroke(notificationFrame, accentColor or theme.accent_orange, 2, 0.2)
 
-    create("Frame", {
+    local topBar = create("Frame", {
         Parent = notificationFrame,
         BackgroundColor3 = accentColor or theme.accent_orange,
         BorderSizePixel = 0,
         Size = UDim2.new(1, 0, 0, 4),
     })
-    addCorner(notificationFrame:FindFirstChildOfClass("Frame"), 14)
+    addCorner(topBar, 12)
 
     create("TextLabel", {
         Parent = notificationFrame,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 14, 0, 8),
-        Size = UDim2.new(1, -28, 0, 20),
+        Position = UDim2.new(0, 12, 0, 8),
+        Size = UDim2.new(1, -24, 0, 18),
         Font = Enum.Font.GothamBold,
         Text = title or "Notification",
         TextColor3 = theme.text_white,
-        TextSize = 14,
+        TextSize = 13,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
     create("TextLabel", {
         Parent = notificationFrame,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 14, 0, 30),
-        Size = UDim2.new(1, -28, 0, 42),
+        Position = UDim2.new(0, 12, 0, 28),
+        Size = UDim2.new(1, -24, 0, 40),
         Font = Enum.Font.Gotham,
         Text = message or "Message",
         TextColor3 = theme.text_gray,
@@ -123,70 +130,66 @@ local function notify(title, message, accentColor, duration)
         TextWrapped = true
     })
 
-    notificationFrame:TweenPosition(UDim2.new(1, -320, 0, 20), "Out", "Quad", 0.3, true)
+    tween(notificationFrame, {Position = UDim2.new(1, -280, 0, 20)}, 0.3)
     task.delay(duration or 3, function()
-        tween(notificationFrame, {Position = UDim2.new(1, 20, 0, 20)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+        tween(notificationFrame, {Position = UDim2.new(1, 300, 0, 20)}, 0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
         task.delay(0.35, function()
             screenGui:Destroy()
         end)
     end)
 end
 
--- ==================== LOGO (Volleyball Icon) ====================
+-- ==================== LOGO ====================
 local function createLogo(parent)
     local logoGroup = create("Frame", {
         Parent = parent,
         BackgroundTransparency = 1,
-        Size = UDim2.new(0, 50, 0, 50),
+        Size = UDim2.new(0, 44, 0, 44),
         BorderSizePixel = 0
     })
 
-    -- Outer circle (orange)
-    local outerCircle = create("Frame", {
+    local outer = create("Frame", {
         Parent = logoGroup,
         BackgroundColor3 = theme.accent_orange,
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -25, 0.5, -25),
-        Size = UDim2.new(0, 50, 0, 50)
+        Position = UDim2.new(0.5, -22, 0.5, -22),
+        Size = UDim2.new(0, 44, 0, 44)
     })
-    create("UICorner", {CornerRadius = UDim.new(1, 0)}).Parent = outerCircle
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}).Parent = outer
 
-    -- Inner circle (white - volleyball base)
-    local middleCircle = create("Frame", {
+    local mid = create("Frame", {
         Parent = logoGroup,
         BackgroundColor3 = theme.text_white,
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -19, 0.5, -19),
-        Size = UDim2.new(0, 38, 0, 38)
+        Position = UDim2.new(0.5, -17, 0.5, -17),
+        Size = UDim2.new(0, 34, 0, 34)
     })
-    create("UICorner", {CornerRadius = UDim.new(1, 0)}).Parent = middleCircle
-
-    -- Blue stripes (volleyball lines)
-    create("Frame", {
-        Parent = logoGroup,
-        BackgroundColor3 = theme.accent_blue,
-        BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -19, 0.5, -2),
-        Size = UDim2.new(0, 38, 0, 3),
-    })
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}).Parent = mid
 
     create("Frame", {
         Parent = logoGroup,
         BackgroundColor3 = theme.accent_blue,
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -2, 0.5, -19),
-        Size = UDim2.new(0, 3, 0, 38),
+        Position = UDim2.new(0.5, -17, 0.5, -1.5),
+        Size = UDim2.new(0, 34, 0, 3),
     })
 
-    -- Center dot
-    local centerDot = create("Frame", {
+    create("Frame", {
+        Parent = logoGroup,
+        BackgroundColor3 = theme.accent_blue,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0.5, -1.5, 0.5, -17),
+        Size = UDim2.new(0, 3, 0, 34),
+    })
+
+    local dot = create("Frame", {
         Parent = logoGroup,
         BackgroundColor3 = theme.accent_orange,
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -5, 0.5, -5),
-        Size = UDim2.new(0, 10, 0, 10)
+        Position = UDim2.new(0.5, -4, 0.5, -4),
+        Size = UDim2.new(0, 8, 0, 8)
     })
-    create("UICorner", {CornerRadius = UDim.new(1, 0)}).Parent = centerDot
+    create("UICorner", {CornerRadius = UDim.new(1, 0)}).Parent = dot
 
     return logoGroup
 end
@@ -200,21 +203,25 @@ function Library:CreateWindow(windowTitle)
 
     local screenGui = create("ScreenGui", {
         Name = "VolleyballLegendsMenu",
-        Parent = game:GetService("CoreGui"),
+        Parent = CoreGui,
         ResetOnSpawn = false,
         IgnoreGuiInset = true,
         ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     })
 
+    -- ✅ FIXED: Posisi di tengah otomatis pakai AnchorPoint
     local windowFrame = create("Frame", {
         Parent = screenGui,
         BackgroundColor3 = theme.bg_main,
         BorderSizePixel = 0,
-        Position = UDim2.new(0.5, -380, 0.5, -250),
-        Size = UDim2.new(0, 760, 0, 500),
-        ClipsDescendants = true
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        AnchorPoint = Vector2.new(0.5, 0.5),
+        Size = UDim2.new(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT),
+        ClipsDescendants = true,
+        Active = true,  -- ✅ FIXED: agar bisa drag
+        Draggable = false
     })
-    addCorner(windowFrame, 20)
+    addCorner(windowFrame, 16)
 
     -- ==================== HEADER ====================
     local header = create("Frame", {
@@ -222,16 +229,17 @@ function Library:CreateWindow(windowTitle)
         BackgroundColor3 = theme.panel_mid,
         BorderSizePixel = 0,
         Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(1, 0, 0, 70)
+        Size = UDim2.new(1, 0, 0, 60),
+        Active = true  -- ✅ FIXED: agar bisa drag
     })
-    addCorner(header, 20)
+    addCorner(header, 16)
     addStroke(header, theme.divider, 1, 0.3)
 
     local logoContainer = create("Frame", {
         Parent = header,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 16, 0.5, -25),
-        Size = UDim2.new(0, 50, 0, 50),
+        Position = UDim2.new(0, 14, 0.5, -22),
+        Size = UDim2.new(0, 44, 0, 44),
         BorderSizePixel = 0
     })
     createLogo(logoContainer)
@@ -239,81 +247,87 @@ function Library:CreateWindow(windowTitle)
     create("TextLabel", {
         Parent = header,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 78, 0, 8),
-        Size = UDim2.new(0.6, 0, 0.5, 0),
+        Position = UDim2.new(0, 66, 0, 8),
+        Size = UDim2.new(0.55, 0, 0, 24),
         Font = Enum.Font.GothamBlack,
         Text = windowTitle or "VOLLEYBALL LEGENDS",
         TextColor3 = theme.text_white,
-        TextSize = 20,
+        TextSize = 16,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
     create("TextLabel", {
         Parent = header,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 78, 0, 32),
-        Size = UDim2.new(0.6, 0, 0.5, 0),
+        Position = UDim2.new(0, 66, 0, 30),
+        Size = UDim2.new(0.55, 0, 0, 18),
         Font = Enum.Font.Gotham,
-        Text = "Pro Script • v2.0 • Powered by Delta",
+        Text = "Pro Script • v2.1 FIXED",
         TextColor3 = theme.text_sub,
-        TextSize = 11,
+        TextSize = 10,
         TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Status
+    -- Status dot
     local statusDot = create("Frame", {
         Parent = header,
         BackgroundColor3 = theme.accent_green,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -68, 0.5, -8),
-        Size = UDim2.new(0, 16, 0, 16)
+        Position = UDim2.new(1, -108, 0.5, -6),
+        Size = UDim2.new(0, 12, 0, 12)
     })
-    addCorner(statusDot, 16)
+    addCorner(statusDot, 12)
 
     create("TextLabel", {
         Parent = header,
         BackgroundTransparency = 1,
-        Position = UDim2.new(1, -50, 0.5, -6),
-        Size = UDim2.new(0, 40, 0, 12),
+        Position = UDim2.new(1, -94, 0.5, -7),
+        Size = UDim2.new(0, 50, 0, 14),
         Font = Enum.Font.GothamSemibold,
         Text = "ACTIVE",
         TextColor3 = theme.accent_green,
         TextSize = 10,
-        TextXAlignment = Enum.TextXAlignment.Right
+        TextXAlignment = Enum.TextXAlignment.Left
     })
 
-    -- Minimize Button
+    -- ✅ FIXED: Minimize Button dengan state yang benar
     local minimizeButton = create("TextButton", {
         Parent = header,
         BackgroundColor3 = theme.panel_light,
         BorderSizePixel = 0,
-        Position = UDim2.new(1, -50, 0.5, -16),
-        Size = UDim2.new(0, 32, 0, 32),
+        Position = UDim2.new(1, -46, 0.5, -14),
+        Size = UDim2.new(0, 28, 0, 28),
         Text = "−",
         TextColor3 = theme.text_white,
         Font = Enum.Font.GothamBold,
-        TextSize = 20,
-        AutoButtonColor = false
+        TextSize = 18,
+        AutoButtonColor = false,
+        ZIndex = 5  -- ✅ FIXED: di atas header agar klik tembus
     })
-    addCorner(minimizeButton, 10)
+    addCorner(minimizeButton, 8)
     addStroke(minimizeButton, theme.accent_orange, 1, 0.3)
 
+    -- ✅ FIXED: Simpan ukuran & posisi ASLI setelah window dibuat
+    local originalSize = UDim2.new(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT)
+    local originalPosition = UDim2.new(0.5, 0, 0.5, 0)
     local isMinimized = false
-    local originalSize = windowFrame.Size
-    local originalPosition = windowFrame.Position
 
     minimizeButton.MouseButton1Click:Connect(function()
         isMinimized = not isMinimized
         if isMinimized then
             minimizeButton.Text = "+"
             minimizeButton.BackgroundColor3 = theme.accent_orange
-            tween(windowFrame, {Size = UDim2.new(0, 320, 0, 70)}, 0.4)
-            tween(windowFrame, {Position = UDim2.new(0.5, -160, 1, -90)}, 0.4)
+            tween(windowFrame, {
+                Size = UDim2.new(0, 260, 0, 60),
+                Position = UDim2.new(0.5, 0, 1, -50)
+            }, 0.3)
         else
             minimizeButton.Text = "−"
             minimizeButton.BackgroundColor3 = theme.panel_light
-            tween(windowFrame, {Size = originalSize}, 0.4)
-            tween(windowFrame, {Position = originalPosition}, 0.4)
+            tween(windowFrame, {
+                Size = originalSize,
+                Position = originalPosition
+            }, 0.3)
         end
     end)
 
@@ -322,22 +336,22 @@ function Library:CreateWindow(windowTitle)
         Parent = windowFrame,
         BackgroundColor3 = theme.panel_light,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 0, 0, 70),
-        Size = UDim2.new(0, 200, 1, -70)
+        Position = UDim2.new(0, 0, 0, 60),
+        Size = UDim2.new(0, 165, 1, -60)
     })
-    addCorner(sidebar, 20)
+    addCorner(sidebar, 16)
     addStroke(sidebar, theme.divider, 1, 0.2)
 
     local tabList = create("Frame", {
         Parent = sidebar,
         BackgroundTransparency = 1,
-        Position = UDim2.new(0, 12, 0, 16),
-        Size = UDim2.new(1, -24, 1, -32)
+        Position = UDim2.new(0, 10, 0, 12),
+        Size = UDim2.new(1, -20, 1, -24)
     })
 
     create("UIListLayout", {
         Parent = tabList,
-        Padding = UDim.new(0, 8),
+        Padding = UDim.new(0, 6),
         SortOrder = Enum.SortOrder.LayoutOrder
     })
 
@@ -346,21 +360,22 @@ function Library:CreateWindow(windowTitle)
         Parent = windowFrame,
         BackgroundTransparency = 1,
         BorderSizePixel = 0,
-        Position = UDim2.new(0, 220, 0, 90),
-        Size = UDim2.new(1, -240, 1, -110),
+        Position = UDim2.new(0, 175, 0, 72),
+        Size = UDim2.new(1, -187, 1, -84),
         CanvasSize = UDim2.new(0, 0, 0, 0),
         AutomaticCanvasSize = Enum.AutomaticSize.Y,
-        ScrollBarThickness = 5,
+        ScrollBarThickness = 4,
         ScrollBarImageColor3 = theme.divider,
-        Active = true
+        Active = true,
+        ClipsDescendants = true
     })
 
     create("UIPadding", {
         Parent = contentArea,
-        PaddingLeft = UDim.new(0, 16),
-        PaddingRight = UDim.new(0, 16),
-        PaddingTop = UDim.new(0, 12),
-        PaddingBottom = UDim.new(0, 12)
+        PaddingLeft = UDim.new(0, 8),
+        PaddingRight = UDim.new(0, 8),
+        PaddingTop = UDim.new(0, 8),
+        PaddingBottom = UDim.new(0, 8)
     })
 
     -- ==================== TAB SYSTEM ====================
@@ -387,14 +402,14 @@ function Library:CreateWindow(windowTitle)
             Parent = tabList,
             BackgroundColor3 = theme.panel_dark,
             BorderSizePixel = 0,
-            Size = UDim2.new(1, 0, 0, 44),
+            Size = UDim2.new(1, 0, 0, 38),
             Text = tabName,
             TextColor3 = theme.text_sub,
             Font = Enum.Font.GothamSemibold,
-            TextSize = 13,
+            TextSize = 12,
             AutoButtonColor = false
         })
-        addCorner(tabButton, 12)
+        addCorner(tabButton, 10)
         addStroke(tabButton, theme.divider, 1, 0.2)
 
         local tabPage = create("Frame", {
@@ -402,12 +417,13 @@ function Library:CreateWindow(windowTitle)
             BackgroundTransparency = 1,
             BorderSizePixel = 0,
             Visible = false,
-            Size = UDim2.new(1, 0, 0, 0)
+            Size = UDim2.new(1, 0, 0, 0),
+            AutomaticSize = Enum.AutomaticSize.Y  -- ✅ FIXED: auto-size agar layout benar
         })
 
         create("UIListLayout", {
             Parent = tabPage,
-            Padding = UDim.new(0, 10),
+            Padding = UDim.new(0, 8),
             SortOrder = Enum.SortOrder.LayoutOrder
         })
 
@@ -433,14 +449,14 @@ function Library:CreateWindow(windowTitle)
                 Parent = tabPage,
                 BackgroundColor3 = theme.accent_orange,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 42),
+                Size = UDim2.new(1, 0, 0, 36),
                 Text = text,
                 TextColor3 = theme.text_white,
                 Font = Enum.Font.GothamSemibold,
-                TextSize = 13,
+                TextSize = 12,
                 AutoButtonColor = false
             })
-            addCorner(button, 12)
+            addCorner(button, 10)
             addStroke(button, theme.accent_orange, 2, 0.2)
 
             button.MouseButton1Click:Connect(function()
@@ -465,20 +481,20 @@ function Library:CreateWindow(windowTitle)
                 Parent = tabPage,
                 BackgroundColor3 = theme.panel_light,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 48)
+                Size = UDim2.new(1, 0, 0, 42)
             })
-            addCorner(toggleFrame, 12)
+            addCorner(toggleFrame, 10)
             addStroke(toggleFrame, theme.divider, 1, 0.2)
 
             create("TextLabel", {
                 Parent = toggleFrame,
                 BackgroundTransparency = 1,
-                Position = UDim2.new(0, 16, 0, 0),
-                Size = UDim2.new(1, -90, 1, 0),
+                Position = UDim2.new(0, 14, 0, 0),
+                Size = UDim2.new(1, -76, 1, 0),
                 Font = Enum.Font.GothamSemibold,
                 Text = text,
                 TextColor3 = theme.text_white,
-                TextSize = 13,
+                TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
 
@@ -486,23 +502,23 @@ function Library:CreateWindow(windowTitle)
                 Parent = toggleFrame,
                 BackgroundColor3 = state and theme.accent_green or theme.panel_dark,
                 BorderSizePixel = 0,
-                Position = UDim2.new(1, -68, 0.5, -14),
-                Size = UDim2.new(0, 56, 0, 28)
+                Position = UDim2.new(1, -58, 0.5, -12),
+                Size = UDim2.new(0, 46, 0, 24)
             })
-            addCorner(toggleBg, 14)
+            addCorner(toggleBg, 12)
             addStroke(toggleBg, state and theme.accent_green or theme.divider, 1, 0.2)
 
             local toggleKnob = create("Frame", {
                 Parent = toggleBg,
                 BackgroundColor3 = theme.text_white,
                 BorderSizePixel = 0,
-                Position = state and UDim2.new(1, -26, 0.5, -10) or UDim2.new(0, 2, 0.5, -10),
-                Size = UDim2.new(0, 20, 0, 20)
+                Position = state and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 2, 0.5, -9),
+                Size = UDim2.new(0, 18, 0, 18)
             })
-            addCorner(toggleKnob, 10)
+            addCorner(toggleKnob, 9)
 
             local function updateToggle()
-                tween(toggleKnob, {Position = state and UDim2.new(1, -26, 0.5, -10) or UDim2.new(0, 2, 0.5, -10)}, 0.2)
+                tween(toggleKnob, {Position = state and UDim2.new(1, -22, 0.5, -9) or UDim2.new(0, 2, 0.5, -9)}, 0.2)
                 tween(toggleBg, {BackgroundColor3 = state and theme.accent_green or theme.panel_dark}, 0.2)
             end
 
@@ -530,20 +546,20 @@ function Library:CreateWindow(windowTitle)
                 Parent = tabPage,
                 BackgroundColor3 = theme.panel_light,
                 BorderSizePixel = 0,
-                Size = UDim2.new(1, 0, 0, 74)
+                Size = UDim2.new(1, 0, 0, 64)
             })
-            addCorner(sliderFrame, 12)
+            addCorner(sliderFrame, 10)
             addStroke(sliderFrame, theme.divider, 1, 0.2)
 
             local label = create("TextLabel", {
                 Parent = sliderFrame,
                 BackgroundTransparency = 1,
-                Position = UDim2.new(0, 16, 0, 10),
-                Size = UDim2.new(1, -32, 0, 20),
+                Position = UDim2.new(0, 14, 0, 8),
+                Size = UDim2.new(1, -28, 0, 18),
                 Font = Enum.Font.GothamSemibold,
                 Text = text .. " : " .. string.format("%.1f", sliderValue),
                 TextColor3 = theme.text_white,
-                TextSize = 13,
+                TextSize = 12,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
 
@@ -551,10 +567,11 @@ function Library:CreateWindow(windowTitle)
                 Parent = sliderFrame,
                 BackgroundColor3 = theme.panel_dark,
                 BorderSizePixel = 0,
-                Position = UDim2.new(0, 16, 0, 40),
-                Size = UDim2.new(1, -32, 0, 10)
+                Position = UDim2.new(0, 14, 0, 36),
+                Size = UDim2.new(1, -28, 0, 8),
+                Active = true  -- ✅ FIXED agar bisa di-click
             })
-            addCorner(sliderBar, 8)
+            addCorner(sliderBar, 4)
 
             local sliderFill = create("Frame", {
                 Parent = sliderBar,
@@ -562,17 +579,28 @@ function Library:CreateWindow(windowTitle)
                 BorderSizePixel = 0,
                 Size = UDim2.new(0, 0, 1, 0)
             })
-            addCorner(sliderFill, 8)
+            addCorner(sliderFill, 4)
 
             local sliderDrag = create("Frame", {
                 Parent = sliderBar,
                 BackgroundColor3 = theme.accent_orange,
                 BorderSizePixel = 0,
-                Position = UDim2.new(0, -8, 0.5, -8),
-                Size = UDim2.new(0, 16, 0, 16)
+                Position = UDim2.new(0, -7, 0.5, -7),
+                Size = UDim2.new(0, 14, 0, 14)
             })
-            addCorner(sliderDrag, 10)
+            addCorner(sliderDrag, 7)
             addStroke(sliderDrag, theme.accent_orange, 2, 0.2)
+
+            -- ✅ FIXED: Click area lebih besar biar gampang di-drag
+            local clickArea = create("TextButton", {
+                Parent = sliderFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 14, 0, 28),
+                Size = UDim2.new(1, -28, 0, 24),
+                Text = "",
+                BorderSizePixel = 0,
+                ZIndex = 5
+            })
 
             local isDragging = false
 
@@ -585,31 +613,33 @@ function Library:CreateWindow(windowTitle)
 
                 label.Text = text .. " : " .. string.format("%.1f", sliderValue)
                 sliderFill.Size = UDim2.new(ratio, 0, 1, 0)
-                sliderDrag.Position = UDim2.new(ratio, -8, 0.5, -8)
+                sliderDrag.Position = UDim2.new(ratio, -7, 0.5, -7)
 
                 if callback then callback(sliderValue) end
             end
 
-            sliderBar.InputBegan:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            clickArea.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
                     isDragging = true
                     updateSlider(input.Position.X)
                 end
             end)
-            UserInputService.InputChanged:Connect(function(input)
-                if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-                    updateSlider(input.Position.X)
+
+            clickArea.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                    isDragging = false
                 end
             end)
-            UserInputService.InputEnded:Connect(function(input)
-                if input.UserInputType == Enum.UserInputType.MouseButton1 then
-                    isDragging = false
+
+            UserInputService.InputChanged:Connect(function(input)
+                if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+                    updateSlider(input.Position.X)
                 end
             end)
 
             local ratio = (sliderValue - minValue) / (maxValue - minValue)
             sliderFill.Size = UDim2.new(ratio, 0, 1, 0)
-            sliderDrag.Position = UDim2.new(ratio, -8, 0.5, -8)
+            sliderDrag.Position = UDim2.new(ratio, -7, 0.5, -7)
 
             return sliderFrame
         end
@@ -618,11 +648,11 @@ function Library:CreateWindow(windowTitle)
             return create("TextLabel", {
                 Parent = tabPage,
                 BackgroundTransparency = 1,
-                Size = UDim2.new(1, 0, 0, 24),
+                Size = UDim2.new(1, 0, 0, 20),
                 Font = Enum.Font.Gotham,
                 Text = "→ " .. text,
                 TextColor3 = theme.text_sub,
-                TextSize = 12,
+                TextSize = 11,
                 TextXAlignment = Enum.TextXAlignment.Left
             })
         end
@@ -641,30 +671,74 @@ function Library:CreateWindow(windowTitle)
         return section
     end
 
-    -- ==================== DRAG ====================
-    local isDragging = false
+    -- ==================== ✅ FIXED: DRAG FUNCTIONALITY ====================
+    -- Pakai InputBegan di header DAN windowFrame, dengan pengecekan agar tidak konflik dengan tombol
+    local dragging = false
+    local dragInput = nil
     local dragStart = nil
-    local windowStart = nil
+    local startPos = nil
 
+    local function updateDrag(input)
+        local delta = input.Position - dragStart
+        windowFrame.Position = UDim2.new(
+            startPos.X.Scale,
+            startPos.X.Offset + delta.X,
+            startPos.Y.Scale,
+            startPos.Y.Offset + delta.Y
+        )
+    end
+
+    local function startDrag(input)
+        -- Jangan drag kalau yang diklik tombol minimize
+        if input.Target and input.Target:IsDescendantOf(minimizeButton) then
+            return
+        end
+        dragging = true
+        dragStart = input.Position
+        startPos = windowFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+
+    -- ✅ Drag dari header (area utama)
     header.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isDragging = true
-            dragStart = input.Position
-            windowStart = windowFrame.Position
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+        or input.UserInputType == Enum.UserInputType.Touch then
+            startDrag(input)
         end
     end)
+
     header.InputChanged:Connect(function(input)
-        if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            windowFrame.Position = UDim2.new(
-                windowStart.X.Scale, windowStart.X.Offset + delta.X,
-                windowStart.Y.Scale, windowStart.Y.Offset + delta.Y
-            )
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement 
+        or input.UserInputType == Enum.UserInputType.Touch) then
+            updateDrag(input)
         end
     end)
+
+    -- ✅ Drag juga dari windowFrame (area kosong)
+    windowFrame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+        or input.UserInputType == Enum.UserInputType.Touch then
+            startDrag(input)
+        end
+    end)
+
+    windowFrame.InputChanged:Connect(function(input)
+        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement 
+        or input.UserInputType == Enum.UserInputType.Touch) then
+            updateDrag(input)
+        end
+    end)
+
+    -- Global release
     UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            isDragging = false
+        if input.UserInputType == Enum.UserInputType.MouseButton1 
+        or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
         end
     end)
 
@@ -677,12 +751,21 @@ end
 -- ==================== VOLLEYBALL LEGENDS FEATURES ====================
 local menu = Library:CreateWindow("VOLLEYBALL LEGENDS")
 
--- Variables untuk fitur
-local playerChar = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
-local humanoid = playerChar:WaitForChild("Humanoid")
+-- Safe character setup
+local function setupCharacter()
+    local char = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+    local hum = char:WaitForChild("Humanoid", 5)
+    return char, hum
+end
+
+local playerChar, humanoid = setupCharacter()
 local autoSpikeEnabled = false
-local aimAssistEnabled = false
 local infiniteJumpEnabled = false
+
+LocalPlayer.CharacterAdded:Connect(function(char)
+    playerChar = char
+    humanoid = char:WaitForChild("Humanoid", 5)
+end)
 
 -- ==================== 🏐 GAMEPLAY TAB ====================
 local gameplayTab = menu:AddTab("🏐 GAMEPLAY")
@@ -701,9 +784,7 @@ gameplayTab:AddToggle("Perfect Timing", false, function(enabled)
     notify("⏱️ TIMING", enabled and "Perfect Timing ON" or "Perfect Timing OFF", theme.accent_yellow, 2)
 end)
 
-gameplayTab:AddSlider("Spike Power", 1, 100, 50, function(value)
-    notify("💥 SPIKE POWER", "Power set to " .. string.format("%.1f", value), theme.accent_red, 1.5)
-end)
+gameplayTab:AddSlider("Spike Power", 1, 100, 50, function(value) end)
 
 gameplayTab:AddSlider("Jump Height", 1, 5, 1, function(value)
     if humanoid then
@@ -716,14 +797,10 @@ local aimTab = menu:AddTab("🎯 AIM ASSIST")
 aimTab:AddLabel("Precision Targeting System")
 
 aimTab:AddToggle("Aim Assist", false, function(enabled)
-    aimAssistEnabled = enabled
     notify("🎯 AIM ASSIST", enabled and "Aim Assist ENABLED" or "Aim Assist DISABLED", theme.accent_blue, 2)
 end)
 
-aimTab:AddSlider("FOV Size", 10, 360, 90, function(value)
-    notify("📐 FOV", "FOV set to " .. string.format("%.1f", value), theme.accent_yellow, 1.5)
-end)
-
+aimTab:AddSlider("FOV Size", 10, 360, 90, function(value) end)
 aimTab:AddSlider("Smoothness", 0.1, 1, 0.5, function(value) end)
 
 aimTab:AddToggle("Silent Aim", false, function(enabled)
@@ -739,15 +816,11 @@ local movementTab = menu:AddTab("🏃 MOVEMENT")
 movementTab:AddLabel("Movement & Agility")
 
 movementTab:AddSlider("Walk Speed", 16, 200, 16, function(value)
-    if humanoid then
-        humanoid.WalkSpeed = value
-    end
+    if humanoid then humanoid.WalkSpeed = value end
 end)
 
 movementTab:AddSlider("Jump Power", 50, 500, 50, function(value)
-    if humanoid then
-        humanoid.JumpPower = value
-    end
+    if humanoid then humanoid.JumpPower = value end
 end)
 
 movementTab:AddToggle("Infinite Jump", false, function(enabled)
@@ -780,9 +853,8 @@ visualsTab:AddToggle("Player ESP", false, function(enabled)
 end)
 
 visualsTab:AddToggle("Fullbright", false, function(enabled)
-    local lighting = game:GetService("Lighting")
-    lighting.Brightness = enabled and 3 or 2
-    lighting.Ambient = enabled and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(70, 70, 70)
+    Lighting.Brightness = enabled and 3 or 2
+    Lighting.Ambient = enabled and Color3.fromRGB(150, 150, 150) or Color3.fromRGB(70, 70, 70)
 end)
 
 visualsTab:AddSlider("Camera FOV", 70, 140, 70, function(value)
@@ -856,15 +928,11 @@ settingsTab:AddToggle("Sound Effects", false, function(enabled)
     notify("🔊 SOUND", enabled and "Sound ON" or "Sound OFF", theme.accent_yellow, 2)
 end)
 
+-- ✅ FIXED: UI Scale proper
 settingsTab:AddSlider("UI Scale", 0.7, 1.5, 1.0, function(value)
     if menu.Window then
-        local baseSize = Vector2.new(760, 500)
-        menu.Window.Size = UDim2.new(0, baseSize.X * value, 0, baseSize.Y * value)
+        menu.Window.Size = UDim2.new(0, WINDOW_WIDTH * value, 0, WINDOW_HEIGHT * value)
     end
-end)
-
-settingsTab:AddSlider("UI Transparency", 0, 1, 0, function(value)
-    -- Bisa diimplementasikan jika perlu
 end)
 
 settingsTab:AddDivider()
@@ -878,24 +946,21 @@ settingsTab:AddButton("Unload Script", function()
 end)
 
 -- ==================== FEATURE LOGIC ====================
--- Infinite Jump
 UserInputService.JumpRequest:Connect(function()
-    if infiniteJumpEnabled and humanoid then
+    if infiniteJumpEnabled and humanoid and humanoid.Health > 0 then
         humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end)
 
--- Auto Spike (basic simulation)
+-- Auto Spike loop
 task.spawn(function()
-    while task.wait(0.1) do
-        if autoSpikeEnabled then
+    while task.wait(0.15) do
+        if autoSpikeEnabled and playerChar and playerChar:FindFirstChild("HumanoidRootPart") then
             pcall(function()
-                -- Cari bola terdekat
                 for _, obj in pairs(workspace:GetDescendants()) do
-                    if obj.Name:lower():find("ball") and obj:IsA("BasePart") then
+                    if obj:IsA("BasePart") and obj.Name:lower():find("ball") then
                         local dist = (obj.Position - playerChar.HumanoidRootPart.Position).Magnitude
                         if dist < 15 then
-                            -- Auto click/mouse1
                             local VirtualUser = game:GetService("VirtualUser")
                             VirtualUser:ClickButton1(Vector2.new())
                         end
@@ -906,7 +971,6 @@ task.spawn(function()
     end
 end)
 
--- ==================== INITIAL NOTIFICATION ====================
-notify("🏐 VOLLEYBALL LEGENDS", "Pro Script loaded! Use − to minimize", theme.accent_orange, 3)
+notify("🏐 VOLLEYBALL LEGENDS", "Fixed! Drag header • Minimize works", theme.accent_orange, 3)
 
 return Library
